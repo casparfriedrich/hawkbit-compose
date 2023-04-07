@@ -1,0 +1,52 @@
+version: '3'
+
+# default user: admin
+# default password: admin
+
+services:
+  hawkbit:
+    image: "hawkbit/hawkbit-update-server:latest-mysql"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+    environment:
+      - 'SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/hawkbit'
+      - 'SPRING_DATASOURCE_USERNAME=root'
+      - 'SPRING_RABBITMQ_HOST=rabbitmq'
+      - 'SPRING_RABBITMQ_USERNAME=guest'
+      - 'SPRING_RABBITMQ_PASSWORD=guest'
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    volumes:
+      - hawkbit:/opt/hawkbit/data
+
+  rabbitmq:
+    image: "rabbitmq:3.11-management"
+    healthcheck:
+      test: rabbitmq-diagnostics ping || exit 1
+    restart: unless-stopped
+    volumes:
+      - rabbitmq:/var/lib/rabbitmq
+
+  mysql:
+    image: "mysql:5.7"
+    environment:
+      MYSQL_DATABASE: "hawkbit"
+      MYSQL_ALLOW_EMPTY_PASSWORD: "true"
+    healthcheck:
+      test: mysqladmin ping || exit 1
+    restart: unless-stopped
+    ulimits:
+      nofile:
+        soft: 1048576
+        hard: 1048576
+    volumes:
+      - mysql:/var/lib/mysql
+
+volumes:
+  rabbitmq:
+  mysql:
+  hawkbit:
